@@ -51,7 +51,7 @@ const transformarPromociones = (data: any[]): ProductoCardProps[] => {
   });
 };
 
-// holi
+
 const transformarCalzones = (data: any[]): ProductoCardProps[] => {
   const filtrados = data.filter(producto => producto.destacado === true);
 
