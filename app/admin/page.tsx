@@ -3,40 +3,58 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface Usuario {
+  id: number;
+  email: string;
+  rol: string;
+}
+
+interface AuthResponse {
+  success: boolean;
+  message?: string;
+  usuario?: Usuario;
+  token?: string;
+}
+
 export default function AdminLogin() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
   useEffect(() => {
     // Verificar si ya está autenticado
-    const checkAuth = async () => {
+    const checkAuth = async (): Promise<void> => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
+          method: 'GET',
           credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
+
         if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.usuario.rol === 'admin') {
+          const data: AuthResponse = await response.json();
+          if (data.success && data.usuario?.rol === 'admin') {
             router.push('/admin/dashboard');
           }
         }
       } catch (error) {
-        console.log('No está autenticado');
+        console.log('No está autenticado:', error);
       }
     };
     checkAuth();
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,10 +63,14 @@ export default function AdminLogin() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const data: AuthResponse = await response.json();
 
       if (data.success) {
-        if (data.usuario.rol === 'admin') {
+        if (data.usuario?.rol === 'admin') {
+          // Almacenar token como fallback para producción
+          if (data.token) {
+            localStorage.setItem('authToken', data.token);
+          }
           router.push('/admin/dashboard');
         } else {
           setError('Acceso denegado. Solo administradores pueden acceder.');
@@ -57,10 +79,19 @@ export default function AdminLogin() {
         setError(data.message || 'Error al iniciar sesión');
       }
     } catch (error) {
+      console.error('Error de conexión:', error);
       setError('Error de conexión. Intente nuevamente.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setEmail(e.target.value);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setPassword(e.target.value);
   };
 
   return (
@@ -95,7 +126,7 @@ export default function AdminLogin() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
               className="w-full px-4 py-3 bg-[#2C3E50]/30 border border-[#2C3E50] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E74C3C]/50 focus:border-transparent text-white placeholder-[#95A5A6] transition-all"
               placeholder="Ingresa tu email"
             />
@@ -111,7 +142,7 @@ export default function AdminLogin() {
               type="password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
               className="w-full px-4 py-3 bg-[#2C3E50]/30 border border-[#2C3E50] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E74C3C]/50 focus:border-transparent text-white placeholder-[#95A5A6] transition-all"
               placeholder="••••••••"
             />

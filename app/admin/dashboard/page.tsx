@@ -20,24 +20,67 @@ interface Stats {
   preciosPromedio: PreciosPromedio[];
 }
 
+interface Usuario {
+  id: number;
+  email: string;
+  rol: string;
+}
+
+interface AuthResponse {
+  success: boolean;
+  message?: string;
+  usuario?: Usuario;
+}
+
+interface StatsResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    productosPorCategoria?: ProductosPorCategoria[];
+    stockPorCategoria?: StockPorCategoria[];
+    preciosPromedio?: PreciosPromedio[];
+  };
+}
+
 const backendUrl = process.env.NEXT_PUBLIC_BACK_HOST;
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<Usuario | null>(null);
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const getUser = async () => {
+    const getUser = async (): Promise<void> => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
+        // Intentar primero con cookies
+        let response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
           credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
+
+        // Si falla con cookies, intentar con token en localStorage
+        if (!response.ok) {
+          const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+          if (token) {
+            response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+          }
+        }
+
         if (response.ok) {
-          const data = await response.json();
-          setUser(data.usuario);
+          const data: AuthResponse = await response.json();
+          if (data.success && data.usuario) {
+            setUser(data.usuario);
+          }
         }
       } catch (error) {
         console.error('Error obteniendo usuario:', error);
@@ -46,36 +89,47 @@ export default function DashboardPage() {
     getUser();
   }, []);
 
-  // ¡ESTE ES EL useEffect FALTANTE!
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchStats = async (): Promise<void> => {
       try {
-        setLoading(true);        
+        setLoading(true);
+        setError(null);
+        
+        // Preparar headers
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+
+        // Añadir token si está disponible en localStorage
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${backendUrl}api/estadisticas/productos`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          credentials: 'include',
+          headers,
         });
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data: StatsResponse = await response.json();
         
-        if (data.success) {
-          const filteredData = {
-            productosPorCategoria: data.data.productosPorCategoria?.filter((item: { categoria: any; cantidad: null | undefined; }) => 
+        if (data.success && data.data) {
+          const filteredData: Stats = {
+            productosPorCategoria: data.data.productosPorCategoria?.filter((item) => 
               item.categoria && 
               item.cantidad !== null && 
               item.cantidad !== undefined &&
               !['Promociones', 'Agregados'].includes(item.categoria)
             ) || [],
-            stockPorCategoria: data.data.stockPorCategoria?.filter((item: { categoria: any; stock: number | null | undefined; }) => 
+            stockPorCategoria: data.data.stockPorCategoria?.filter((item) => 
               item.categoria && item.stock !== null && item.stock !== undefined && item.stock > 0
             ) || [],
-            preciosPromedio: data.data.preciosPromedio?.filter((item: { categoria: any; precio_promedio: null | undefined; }) => 
+            preciosPromedio: data.data.preciosPromedio?.filter((item) => 
               item.categoria && item.precio_promedio !== null && item.precio_promedio !== undefined
             ) || []
           };
@@ -84,7 +138,8 @@ export default function DashboardPage() {
           setError(data.message || 'Error al obtener los datos');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al cargar las estadísticas');
+        const errorMessage = err instanceof Error ? err.message : 'Error al cargar las estadísticas';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -93,8 +148,12 @@ export default function DashboardPage() {
     fetchStats();
   }, []); 
 
-  const formatPriceTooltip = (value: number, name: string) => {
+  const formatPriceTooltip = (value: number, name: string): [string, string] => {
     return [`S/.${value.toFixed(2)}`, name];
+  };
+
+  const handleRetry = (): void => {
+    window.location.reload();
   };
 
   if (loading) {
@@ -127,8 +186,8 @@ export default function DashboardPage() {
               <h3 className="text-red-800 font-semibold">Error</h3>
               <p className="text-red-600">{error}</p>
               <button
-                onClick={() => window.location.reload()}
-                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={handleRetry}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
               >
                 Reintentar
               </button>
