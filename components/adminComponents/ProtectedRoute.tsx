@@ -1,35 +1,29 @@
 'use client';
 
-import { useEffect, useState, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface Usuario {
-  id: number;
-  email: string;
-  rol: string;
-}
 
 interface AuthResponse {
   success: boolean;
   message?: string;
-  usuario?: Usuario;
+  usuario?: {
+    id: number;
+    email: string;
+    rol: string;
+  };
 }
 
-interface ProtectedRouteProps {
-  children: ReactNode;
-}
-
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<Usuario | null>(null);
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
 
   useEffect(() => {
-    const verifyAuth = async (): Promise<void> => {
+    const verifyAuth = async () => {
+      console.log('[ProtectedRoute] Iniciando verificación de autenticación');
+      
       try {
-        // Intentar primero con cookies
-        let response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
+        // Intento con cookies primero
+        let response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/auth/verify`, {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -37,11 +31,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
           },
         });
 
-        // Si falla con cookies, intentar con token en localStorage (fallback para producción)
+        console.log('[ProtectedRoute] Respuesta inicial:', response.status);
+
+        // Fallback: intentar con token en localStorage si falla con cookies
         if (!response.ok) {
-          const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+          const token = localStorage.getItem('authToken');
           if (token) {
-            response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
+            console.log('[ProtectedRoute] Intentando con token de localStorage');
+            response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/auth/verify`, {
               method: 'GET',
               credentials: 'include',
               headers: {
@@ -52,54 +49,42 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
           }
         }
 
-        if (response.ok) {
-          const data: AuthResponse = await response.json();
-          if (data.success && data.usuario?.rol === 'admin') {
-            setIsAuthenticated(true);
-            setUser(data.usuario);
-          } else {
-            // Limpiar localStorage si el usuario no es admin
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('authToken');
-            }
-            router.push('/admin');
-          }
+        const data: AuthResponse = await response.json();
+        console.log('[ProtectedRoute] Datos de verificación:', data);
+
+        if (response.ok && data.success && data.usuario?.rol === 'admin') {
+          console.log('[ProtectedRoute] Usuario autenticado:', data.usuario.email);
+          setAuthState('authenticated');
         } else {
-          // Limpiar localStorage si la respuesta no es exitosa
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('authToken');
-          }
-          router.push('/admin');
+          throw new Error(data.message || 'No autorizado');
         }
       } catch (error) {
-        console.error('Error verificando autenticación:', error);
-        // Limpiar localStorage en caso de error
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('authToken');
-        }
+        console.error('[ProtectedRoute] Error de autenticación:', error);
+        localStorage.removeItem('authToken');
+        setAuthState('unauthenticated');
         router.push('/admin');
-      } finally {
-        setIsLoading(false);
       }
     };
 
     verifyAuth();
   }, [router]);
 
-  if (isLoading) {
+  if (authState === 'checking') {
+    console.log('[ProtectedRoute] Mostrando loader durante verificación');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verificando autenticación...</p>
+          <p className="text-gray-600">Verificando permisos...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
+  if (authState === 'authenticated') {
+    console.log('[ProtectedRoute] Renderizando contenido protegido');
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  return null;
 }
