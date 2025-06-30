@@ -40,14 +40,33 @@ export default function AdminLogin() {
         const verifyUrl = `${process.env.NEXT_PUBLIC_BACK_HOST}/auth/verify`;
         console.log(`[AdminLogin] Intentando URL de verificación: ${verifyUrl}`);
 
-        const response = await fetch(verifyUrl, {
-          method: 'GET',
+        // Obtener token de cookies o localStorage
+        const token = 
+          document.cookie.includes('authToken') 
+            ? document.cookie.split('authToken=')[1]?.split(';')[0]
+            : localStorage.getItem('authToken');
+
+        console.log('[AdminLogin] Token encontrado:', !!token);
+
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const requestOptions: RequestInit = {
+          method: 'POST',
           credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
+          headers: headers,
+        };
+
+        if (token) {
+          requestOptions.body = JSON.stringify({ token });
+        }
+
+        const response = await fetch(verifyUrl, requestOptions);
 
         console.log(`[AdminLogin] Respuesta de verificación:`, {
           status: response.status,
