@@ -70,8 +70,7 @@ export default function LoginPage() {
 
     try {
       const loginUrls = [
-        `/api/auth/login`,
-        `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/login`
+        `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/login`.replace(/([^:]\/)\/+/g, "$1")
       ];
 
       let successfulLogin = false;
