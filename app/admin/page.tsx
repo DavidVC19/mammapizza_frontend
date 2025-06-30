@@ -37,52 +37,32 @@ export default function AdminLogin() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const verifyUrls = [
-          `/api/auth/verify`,
-          `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/verify`,
-          `${process.env.NEXT_PUBLIC_BACK_HOST}/auth/verify`
-        ];
+        const verifyUrl = `${process.env.NEXT_PUBLIC_BACK_HOST}/auth/verify`;
+        console.log(`[AdminLogin] Intentando URL de verificación: ${verifyUrl}`);
 
-        for (const verifyUrl of verifyUrls) {
-          console.log(`[AdminLogin] Intentando URL de verificación: ${verifyUrl}`);
+        const response = await fetch(verifyUrl, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
 
-          try {
-            const response = await fetch(verifyUrl, {
-              method: 'GET',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              }
-            });
+        console.log(`[AdminLogin] Respuesta de verificación:`, {
+          status: response.status,
+          headers: Object.fromEntries(response.headers.entries())
+        });
 
-            console.log(`[AdminLogin] Respuesta de verificación (${verifyUrl}):`, {
-              status: response.status,
-              headers: Object.fromEntries(response.headers.entries())
-            });
-
-            const responseText = await response.text();
-            console.log(`[AdminLogin] Texto de respuesta (${verifyUrl}):`, responseText);
-
-            if (response.ok) {
-              try {
-                const data = JSON.parse(responseText);
-                if (data.usuario?.rol === 'admin') {
-                  // Navegación programática con depuración
-                  console.log('[AdminLogin] Navegando a dashboard');
-                  router.push('/admin/dashboard');
-                  return;
-                }
-              } catch (parseError) {
-                console.error(`[AdminLogin] Error parseando respuesta (${verifyUrl}):`, parseError);
-              }
-            }
-          } catch (fetchError) {
-            console.error(`[AdminLogin] Error de fetch (${verifyUrl}):`, fetchError);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.usuario?.rol === 'admin') {
+            console.log('[AdminLogin] Navegando a dashboard');
+            router.push('/admin/dashboard');
           }
         }
       } catch (error) {
-        console.error('[AdminLogin] Error general en verificación de sesión:', error);
+        console.error('[AdminLogin] Error en verificación de sesión:', error);
       }
     };
 
