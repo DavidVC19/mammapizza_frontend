@@ -32,7 +32,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }/api/auth/verify`, {
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
           credentials: 'include',
         });
         if (response.ok) {
@@ -51,7 +51,7 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setLoading(true);        
-        const response = await fetch(`${backendUrl}/api/estadisticas/productos`, {
+        const response = await fetch(`${backendUrl}api/estadisticas/productos`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

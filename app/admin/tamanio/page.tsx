@@ -41,12 +41,12 @@ export default function CrudTamaniosPage() {
   const [paginaActual, setPaginaActual] = useState(1);
   const ITEMS_POR_PAGINA = 15;
 
-  const API_URL = `${backendUrl}/api/tamanios`;
+  const API_URL = `${backendUrl}api/tamanios`;
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }/api/auth/verify`, {
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
           credentials: 'include',
         });
         if (response.ok) {

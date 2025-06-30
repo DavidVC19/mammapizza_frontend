@@ -12,7 +12,7 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const verifyAuth = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/auth/verify', {
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
           method: 'GET',
           credentials: 'include',
         });

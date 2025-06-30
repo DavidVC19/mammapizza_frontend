@@ -51,12 +51,12 @@ export default function CrudTamanioSaborPage() {
   const [pagina, setPagina] = useState(1);
   const ITEMS_POR_PAGINA = 15;
 
-  const API_BASE_URL = `${backendUrl}/api/tamanioSabor`;
+  const API_BASE_URL = `${backendUrl}api/tamanioSabor`;
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }/api/auth/verify`, {
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
           credentials: 'include',
         });
         if (response.ok) {
@@ -75,8 +75,8 @@ export default function CrudTamanioSaborPage() {
       setLoading(true);
       const [resComb, resTam, resSab] = await Promise.all([
         fetch(`${API_BASE_URL}?include=tamanio,sabor`),
-        fetch(`${backendUrl}/api/tamanios`),
-        fetch(`${backendUrl}/api/sabores`)
+        fetch(`${backendUrl}api/tamanios`),
+        fetch(`${backendUrl}api/sabores`)
       ]);
       
       if (!resComb.ok || !resTam.ok || !resSab.ok) {

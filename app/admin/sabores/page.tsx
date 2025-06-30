@@ -45,12 +45,12 @@ export default function CrudSaborPage() {
   const [pagina, setPagina] = useState(1);
   const ITEMS_POR_PAGINA = 15;
 
-  const API_URL = `${backendUrl}/api/sabores`;
+  const API_URL = `${backendUrl}api/sabores`;
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }/api/auth/verify`, {
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
           credentials: 'include',
         });
         if (response.ok) {

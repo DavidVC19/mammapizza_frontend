@@ -54,7 +54,7 @@ export default function CrudProductoPage() {
   const ITEMS_POR_PAGINA = 15;
 
   const backendUrl = process.env.NEXT_PUBLIC_BACK_HOST;
-  const API_BASE_URL = `${backendUrl}/api`;
+  const API_BASE_URL = `${backendUrl}api`;
   const PRODUCTOS_URL = `${API_BASE_URL}/productos`;
   const CATEGORIAS_URL = `${API_BASE_URL}/categorias`;
   const UPLOADS_URL = `${API_BASE_URL}/uploads`;
@@ -63,7 +63,7 @@ export default function CrudProductoPage() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/verify`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
           credentials: 'include',
         });
         if (response.ok) {

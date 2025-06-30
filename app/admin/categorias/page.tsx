@@ -36,12 +36,12 @@ export default function CrudCategoriasPage() {
   const [busqueda, setBusqueda] = useState('');
   const categoriasPorPagina = 15;
 
-  const API_URL = `${backendUrl}/api/categorias`;
+  const API_URL = `${backendUrl}api/categorias`;
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }/api/auth/verify`, {
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
           credentials: 'include',
         });
         if (response.ok) {

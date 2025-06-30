@@ -14,7 +14,7 @@ export default function AdminLogin() {
     // Verificar si ya está autenticado
     const checkAuth = async () => {
       try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }/api/auth/verify`, {
+        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
           credentials: 'include',
         });
         if (response.ok) {
@@ -36,7 +36,7 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }/api/auth/login`, {
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
