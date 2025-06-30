@@ -53,23 +53,6 @@ export default function CrudTamanioSaborPage() {
 
   const API_BASE_URL = `${backendUrl}api/tamanioSabor`;
 
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.usuario);
-        }
-      } catch (error) {
-        console.error('Error obteniendo usuario:', error);
-      }
-    };
-    getUser();
-  }, []);
-
   const obtenerDatos = async () => {
     try {
       setLoading(true);

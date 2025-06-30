@@ -47,23 +47,6 @@ export default function CrudSaborPage() {
 
   const API_URL = `${backendUrl}api/sabores`;
 
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const response = await fetch(`${ process.env.NEXT_PUBLIC_BACK_HOST }api/auth/verify`, {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.usuario);
-        }
-      } catch (error) {
-        console.error('Error obteniendo usuario:', error);
-      }
-    };
-    getUser();
-  }, []);
-
   const obtenerSabores = async () => {
     try {
       setLoading(true);
