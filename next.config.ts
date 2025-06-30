@@ -15,8 +15,16 @@ const nextConfig: NextConfig = {
       {
         source: '/api/:path*',
         destination: `${process.env.NEXT_PUBLIC_BACK_HOST}/api/:path*`
+      },
+      {
+        source: '/api/auth/:path*',
+        destination: `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/:path*`
       }
     ];
+  },
+  webpack: (config) => {
+    config.resolve.fallback = { fs: false, net: false, tls: false };
+    return config;
   }
 };
 

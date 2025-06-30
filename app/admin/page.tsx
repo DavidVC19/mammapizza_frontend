@@ -25,11 +25,14 @@ export default function AdminLogin() {
   });
   const router = useRouter();
 
-  // Depuración de variables de entorno
+  // Depuración EXHAUSTIVA de variables de entorno
   useEffect(() => {
-    console.log('Variables de entorno para autenticación:', {
-      BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
-      API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL
+    console.log('VARIABLES DE ENTORNO COMPLETAS:', {
+      'process.env': process.env,
+      'NEXT_PUBLIC_BACKEND_URL': process.env.NEXT_PUBLIC_BACKEND_URL,
+      'NEXT_PUBLIC_BACK_HOST': process.env.NEXT_PUBLIC_BACK_HOST,
+      'NEXT_PUBLIC_API_BASE_URL': process.env.NEXT_PUBLIC_API_BASE_URL,
+      'window.location': window.location.href
     });
   }, []);
 
@@ -37,33 +40,55 @@ export default function AdminLogin() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Construcción segura de la URL de verificación
-        const verifyUrl = `/api/auth/verify`;
+        // URLs EXPLÍCITAS para debugging
+        const backendUrl = process.env.NEXT_PUBLIC_BACK_HOST || '';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
         
-        console.log('[AdminLogin] URL de verificación:', verifyUrl);
+        const verifyUrls = [
+          `/api/auth/verify`,
+          `${backendUrl}/api/auth/verify`,
+          `${backendUrl}/auth/verify`
+        ];
 
-        const response = await fetch(verifyUrl, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
+        for (const verifyUrl of verifyUrls) {
+          console.log(`[AdminLogin] Intentando URL de verificación: ${verifyUrl}`);
 
-        console.log('[AdminLogin] Respuesta de verificación:', {
-          status: response.status,
-          headers: Object.fromEntries(response.headers.entries())
-        });
+          try {
+            const response = await fetch(verifyUrl, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              }
+            });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.usuario?.rol === 'admin') {
-            router.push('/admin/dashboard');
+            console.log(`[AdminLogin] Respuesta de verificación (${verifyUrl}):`, {
+              status: response.status,
+              headers: Object.fromEntries(response.headers.entries())
+            });
+
+            // Capturar texto de respuesta para debugging
+            const responseText = await response.text();
+            console.log(`[AdminLogin] Texto de respuesta (${verifyUrl}):`, responseText);
+
+            if (response.ok) {
+              try {
+                const data = JSON.parse(responseText);
+                if (data.usuario?.rol === 'admin') {
+                  router.push('/admin/dashboard');
+                  return; // Salir del bucle si tiene éxito
+                }
+              } catch (parseError) {
+                console.error(`[AdminLogin] Error parseando respuesta (${verifyUrl}):`, parseError);
+              }
+            }
+          } catch (fetchError) {
+            console.error(`[AdminLogin] Error de fetch (${verifyUrl}):`, fetchError);
           }
         }
       } catch (error) {
-        console.error('[AdminLogin] Error en verificación de sesión:', error);
+        console.error('[AdminLogin] Error general en verificación de sesión:', error);
       }
     };
 
@@ -75,56 +100,68 @@ export default function AdminLogin() {
     setStatus({ loading: true, error: '' });
 
     try {
-      // Construcción segura de la URL de login
-      const loginUrl = `/api/auth/login`;
+      // URLs EXPLÍCITAS para debugging
+      const backendUrl = process.env.NEXT_PUBLIC_BACK_HOST || '';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
       
-      console.log('[AdminLogin] URL de login:', loginUrl);
+      const loginUrls = [
+        `/api/auth/login`,
+        `${backendUrl}/api/auth/login`,
+        `${backendUrl}/auth/login`
+      ];
 
-      const response = await fetch(loginUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
+      let successfulLogin = false;
+      for (const loginUrl of loginUrls) {
+        console.log(`[AdminLogin] Intentando URL de login: ${loginUrl}`);
 
-      console.log('[AdminLogin] Respuesta de login:', {
-        status: response.status,
-        headers: Object.fromEntries(response.headers.entries())
-      });
+        try {
+          const response = await fetch(loginUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(formData),
+          });
 
-      // Capturar texto completo de respuesta
-      const responseText = await response.text();
-      console.log('[AdminLogin] Texto completo de respuesta:', responseText);
+          console.log(`[AdminLogin] Respuesta de login (${loginUrl}):`, {
+            status: response.status,
+            headers: Object.fromEntries(response.headers.entries())
+          });
 
-      // Parsear respuesta de manera segura
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('[AdminLogin] Error parseando respuesta:', {
-          responseText,
-          parseError
-        });
-        throw new Error(`No se pudo parsear la respuesta: ${responseText}`);
+          // Capturar texto de respuesta para debugging
+          const responseText = await response.text();
+          console.log(`[AdminLogin] Texto de respuesta (${loginUrl}):`, responseText);
+
+          if (response.ok) {
+            try {
+              const data = JSON.parse(responseText);
+              
+              if (data.usuario?.rol !== 'admin') {
+                throw new Error('Acceso reservado para administradores');
+              }
+
+              // Almacenar token como fallback
+              if (data.token) {
+                localStorage.setItem('authToken', data.token);
+              }
+
+              router.push('/admin/dashboard');
+              successfulLogin = true;
+              break; // Salir del bucle si tiene éxito
+            } catch (parseError) {
+              console.error(`[AdminLogin] Error parseando respuesta (${loginUrl}):`, parseError);
+            }
+          }
+        } catch (fetchError) {
+          console.error(`[AdminLogin] Error de fetch (${loginUrl}):`, fetchError);
+        }
       }
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Error en credenciales');
+      if (!successfulLogin) {
+        throw new Error('No se pudo iniciar sesión con ninguna URL');
       }
-
-      if (data.usuario?.rol !== 'admin') {
-        throw new Error('Acceso reservado para administradores');
-      }
-
-      // Almacenar token como fallback
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
-      }
-
-      router.push('/admin/dashboard');
     } catch (error: any) {
       console.error('[AdminLogin] Error completo:', {
         message: error.message,
