@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,22 +25,40 @@ export default function AdminLogin() {
   });
   const router = useRouter();
 
+  // Depuración de variables de entorno
+  useEffect(() => {
+    console.log('Variables de entorno para autenticación:', {
+      BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
+      API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL
+    });
+  }, []);
+
   // Verificación inicial de sesión
   useEffect(() => {
-    console.log('[AdminLogin] Verificando sesión existente');
     const checkSession = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/verify`, {
+        // Construcción segura de la URL de verificación
+        const verifyUrl = `/api/auth/verify`;
+        
+        console.log('[AdminLogin] URL de verificación:', verifyUrl);
+
+        const response = await fetch(verifyUrl, {
+          method: 'GET',
           credentials: 'include',
-          cache: 'no-store'
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
         });
 
-        console.log('[AdminLogin] Respuesta de verificación:', response.status);
+        console.log('[AdminLogin] Respuesta de verificación:', {
+          status: response.status,
+          headers: Object.fromEntries(response.headers.entries())
+        });
 
         if (response.ok) {
           const data = await response.json();
           if (data.usuario?.rol === 'admin') {
-            console.log('[AdminLogin] Sesión válida encontrada, redirigiendo');
             router.push('/admin/dashboard');
           }
         }
@@ -55,21 +72,44 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[AdminLogin] Intento de login con:', formData.email);
     setStatus({ loading: true, error: '' });
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`, {
+      // Construcción segura de la URL de login
+      const loginUrl = `/api/auth/login`;
+      
+      console.log('[AdminLogin] URL de login:', loginUrl);
+
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify(formData),
       });
 
-      const data: LoginResponse = await response.json();
-      console.log('[AdminLogin] Respuesta de login:', data);
+      console.log('[AdminLogin] Respuesta de login:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      // Capturar texto completo de respuesta
+      const responseText = await response.text();
+      console.log('[AdminLogin] Texto completo de respuesta:', responseText);
+
+      // Parsear respuesta de manera segura
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('[AdminLogin] Error parseando respuesta:', {
+          responseText,
+          parseError
+        });
+        throw new Error(`No se pudo parsear la respuesta: ${responseText}`);
+      }
 
       if (!response.ok) {
         throw new Error(data.message || 'Error en credenciales');
@@ -81,14 +121,17 @@ export default function AdminLogin() {
 
       // Almacenar token como fallback
       if (data.token) {
-        console.log('[AdminLogin] Almacenando token en localStorage');
         localStorage.setItem('authToken', data.token);
       }
 
-      console.log('[AdminLogin] Login exitoso, redirigiendo');
       router.push('/admin/dashboard');
     } catch (error: any) {
-      console.error('[AdminLogin] Error en login:', error.message);
+      console.error('[AdminLogin] Error completo:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      
       setStatus({
         loading: false,
         error: error.message || 'Error al iniciar sesión'
