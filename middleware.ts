@@ -8,6 +8,7 @@ export function middleware(request: NextRequest) {
     method: request.method,
     pathname: new URL(request.url).pathname,
     headers: Object.fromEntries(request.headers.entries()),
+    cookies: request.cookies.getAll(),
     env: {
       NEXT_PUBLIC_BACK_HOST: process.env.NEXT_PUBLIC_BACK_HOST,
       NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL
@@ -16,11 +17,13 @@ export function middleware(request: NextRequest) {
 
   // Reescritura de rutas para debugging
   const url = new URL(request.url);
-  if (url.pathname.startsWith('/api/')) {
+  
+  // Manejo de rutas de autenticación
+  if (url.pathname.startsWith('/api/auth/')) {
     const backendUrl = process.env.NEXT_PUBLIC_BACK_HOST || '';
     const newUrl = new URL(url.pathname.replace('/api/', '/'), backendUrl);
     
-    console.log('MIDDLEWARE - Reescritura de URL:', {
+    console.log('MIDDLEWARE - Reescritura de URL de autenticación:', {
       originalUrl: url.toString(),
       newUrl: newUrl.toString()
     });
@@ -28,10 +31,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(newUrl);
   }
 
+  // Protección de rutas de admin
+  if (url.pathname.startsWith('/admin/')) {
+    const token = request.cookies.get('authToken');
+    
+    console.log('MIDDLEWARE - Verificación de ruta de admin:', {
+      token: !!token,
+      pathname: url.pathname
+    });
+
+    if (!token) {
+      console.log('MIDDLEWARE - Redirigiendo a login por falta de token');
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 // Configurar para ejecutarse en rutas específicas
 export const config = {
-  matcher: ['/api/:path*']
+  matcher: ['/api/:path*', '/admin/:path*']
 }; 
