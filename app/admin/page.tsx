@@ -33,59 +33,9 @@ export default function AdminLogin() {
     });
   }, []);
 
-  // Verificación inicial de sesión
+  // Eliminar verificación inicial de sesión
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const verifyUrl = `${process.env.NEXT_PUBLIC_BACK_HOST}/auth/verify`;
-        console.log(`[AdminLogin] Intentando URL de verificación: ${verifyUrl}`);
-
-        // Obtener token de cookies o localStorage
-        const token = 
-          document.cookie.includes('authToken') 
-            ? document.cookie.split('authToken=')[1]?.split(';')[0]
-            : localStorage.getItem('authToken');
-
-        console.log('[AdminLogin] Token encontrado:', !!token);
-
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json',
-        };
-
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const requestOptions: RequestInit = {
-          method: 'POST',
-          credentials: 'include',
-          headers: headers,
-        };
-
-        if (token) {
-          requestOptions.body = JSON.stringify({ token });
-        }
-
-        const response = await fetch(verifyUrl, requestOptions);
-
-        console.log(`[AdminLogin] Respuesta de verificación:`, {
-          status: response.status,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.usuario?.rol === 'admin') {
-            console.log('[AdminLogin] Navegando a dashboard');
-            router.push('/admin/dashboard');
-          }
-        }
-      } catch (error) {
-        console.error('[AdminLogin] Error en verificación de sesión:', error);
-      }
-    };
-
-    checkSession();
+    // Comentar verificación de sesión
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,75 +43,36 @@ export default function AdminLogin() {
     setStatus({ loading: true, error: '' });
 
     try {
-      const loginUrls = [
-        `/api/auth/login`,
-        `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/login`,
-        `${process.env.NEXT_PUBLIC_BACK_HOST}/auth/login`
-      ];
+      // URL de login simplificada
+      const loginUrl = `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/login`;
 
-      let successfulLogin = false;
-      for (const loginUrl of loginUrls) {
-        console.log(`[AdminLogin] Intentando URL de login: ${loginUrl}`);
+      const response = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData),
+      });
 
-        try {
-          const response = await fetch(loginUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(formData),
-          });
-
-          console.log(`[AdminLogin] Respuesta de login (${loginUrl}):`, {
-            status: response.status,
-            headers: Object.fromEntries(response.headers.entries())
-          });
-
-          const responseText = await response.text();
-          console.log(`[AdminLogin] Texto de respuesta (${loginUrl}):`, responseText);
-
-          if (response.ok) {
-            try {
-              const data = JSON.parse(responseText);
-              
-              if (data.usuario?.rol !== 'admin') {
-                throw new Error('Acceso reservado para administradores');
-              }
-
-              // Almacenar token como fallback
-              if (data.token) {
-                localStorage.setItem('authToken', data.token);
-              }
-
-              // Navegación programática con depuración
-              console.log('[AdminLogin] Login exitoso, navegando a dashboard');
-              
-              // Intentar navegación múltiple
-              router.push('/admin/dashboard');
-              window.location.href = '/admin/dashboard';
-
-              successfulLogin = true;
-              break;
-            } catch (parseError) {
-              console.error(`[AdminLogin] Error parseando respuesta (${loginUrl}):`, parseError);
-            }
-          }
-        } catch (fetchError) {
-          console.error(`[AdminLogin] Error de fetch (${loginUrl}):`, fetchError);
+      if (response.ok) {
+        const data: LoginResponse = await response.json();
+        
+        if (data.usuario?.rol !== 'admin') {
+          throw new Error('Acceso reservado para administradores');
         }
-      }
 
-      if (!successfulLogin) {
-        throw new Error('No se pudo iniciar sesión con ninguna URL');
+        // Almacenar información del usuario en localStorage
+        localStorage.setItem('user', JSON.stringify(data.usuario));
+
+        // Redirigir al dashboard
+        router.push('/admin/dashboard');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al iniciar sesión');
       }
     } catch (error: any) {
-      console.error('[AdminLogin] Error completo:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
+      console.error('[AdminLogin] Error completo:', error);
       
       setStatus({
         loading: false,

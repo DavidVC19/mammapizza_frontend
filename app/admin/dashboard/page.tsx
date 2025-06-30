@@ -53,37 +53,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const getUser = async (): Promise<void> => {
-      try {
-        // Intentar primero con cookies
-        let response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        // Si falla con cookies, intentar con token en localStorage
-        if (!response.ok) {
-          const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-          if (token) {
-            response = await fetch(`${process.env.NEXT_PUBLIC_BACK_HOST}api/auth/verify`, {
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-            });
-          }
-        }
-
-        if (response.ok) {
-          const data: AuthResponse = await response.json();
-          if (data.success && data.usuario) {
-            setUser(data.usuario);
-          }
-        }
-      } catch (error) {
-        console.error('Error obteniendo usuario:', error);
+      // Comentar toda la lógica de verificación
+      // Obtener usuario desde localStorage
+      const userJson = localStorage.getItem('user');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        setUser(user);
       }
     };
     getUser();

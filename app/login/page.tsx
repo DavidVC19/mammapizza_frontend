@@ -28,41 +28,7 @@ export default function LoginPage() {
   // Verificación inicial de sesión
   useEffect(() => {
     // Comentar temporalmente la verificación de sesión
-    // const checkSession = async () => {
-    //   try {
-    //     const verifyUrls = [
-    //       `/api/auth/verify`,
-    //       `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/verify`
-    //     ];
-
-    //     for (const verifyUrl of verifyUrls) {
-    //       try {
-    //         const response = await fetch(verifyUrl, {
-    //           method: 'GET',
-    //           credentials: 'include',
-    //           headers: {
-    //             'Content-Type': 'application/json',
-    //             'Accept': 'application/json'
-    //           }
-    //         });
-
-    //         if (response.ok) {
-    //           const data = await response.json();
-    //           if (data.usuario?.rol === 'admin') {
-    //             router.push('/admin/dashboard');
-    //             return;
-    //           }
-    //         }
-    //       } catch (fetchError) {
-    //         console.error(`[Login] Error de fetch (${verifyUrl}):`, fetchError);
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error('[Login] Error general en verificación de sesión:', error);
-    //   }
-    // };
-
-    // checkSession();
+    // Eliminar cualquier intento de verificación de autenticación
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,7 +36,9 @@ export default function LoginPage() {
     setStatus({ loading: true, error: '' });
 
     try {
-      const loginUrl = `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/login`;
+      // Usar URL para construir la URL correctamente
+      const backendHost = process.env.NEXT_PUBLIC_BACK_HOST?.replace(/\/+$/, '');
+      const loginUrl = `${backendHost}/api/auth/login`;
 
       const response = await fetch(loginUrl, {
         method: 'POST',
@@ -88,7 +56,7 @@ export default function LoginPage() {
           throw new Error('Acceso reservado para administradores');
         }
 
-        // Almacenar información del usuario en localStorage si es necesario
+        // Almacenar información del usuario en localStorage
         localStorage.setItem('user', JSON.stringify(data.usuario));
 
         router.push('/admin/dashboard');
