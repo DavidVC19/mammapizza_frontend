@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body >
-        {/* Aquí uso el ClientLayout para todo el contenido dentro del body */}
+        {/* Aquí uso el ClientLayout para todo el contenido dentro del body //*/}
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

@@ -25,14 +25,11 @@ export default function AdminLogin() {
   });
   const router = useRouter();
 
-  // Depuración EXHAUSTIVA de variables de entorno
+  // Depuración de navegación
   useEffect(() => {
-    console.log('VARIABLES DE ENTORNO COMPLETAS:', {
-      'process.env': process.env,
-      'NEXT_PUBLIC_BACKEND_URL': process.env.NEXT_PUBLIC_BACKEND_URL,
-      'NEXT_PUBLIC_BACK_HOST': process.env.NEXT_PUBLIC_BACK_HOST,
-      'NEXT_PUBLIC_API_BASE_URL': process.env.NEXT_PUBLIC_API_BASE_URL,
-      'window.location': window.location.href
+    console.log('Configuración inicial de navegación:', {
+      pathname: window.location.pathname,
+      search: window.location.search
     });
   }, []);
 
@@ -40,14 +37,10 @@ export default function AdminLogin() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // URLs EXPLÍCITAS para debugging
-        const backendUrl = process.env.NEXT_PUBLIC_BACK_HOST || '';
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
-        
         const verifyUrls = [
           `/api/auth/verify`,
-          `${backendUrl}/api/auth/verify`,
-          `${backendUrl}/auth/verify`
+          `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/verify`,
+          `${process.env.NEXT_PUBLIC_BACK_HOST}/auth/verify`
         ];
 
         for (const verifyUrl of verifyUrls) {
@@ -68,7 +61,6 @@ export default function AdminLogin() {
               headers: Object.fromEntries(response.headers.entries())
             });
 
-            // Capturar texto de respuesta para debugging
             const responseText = await response.text();
             console.log(`[AdminLogin] Texto de respuesta (${verifyUrl}):`, responseText);
 
@@ -76,8 +68,10 @@ export default function AdminLogin() {
               try {
                 const data = JSON.parse(responseText);
                 if (data.usuario?.rol === 'admin') {
+                  // Navegación programática con depuración
+                  console.log('[AdminLogin] Navegando a dashboard');
                   router.push('/admin/dashboard');
-                  return; // Salir del bucle si tiene éxito
+                  return;
                 }
               } catch (parseError) {
                 console.error(`[AdminLogin] Error parseando respuesta (${verifyUrl}):`, parseError);
@@ -100,14 +94,10 @@ export default function AdminLogin() {
     setStatus({ loading: true, error: '' });
 
     try {
-      // URLs EXPLÍCITAS para debugging
-      const backendUrl = process.env.NEXT_PUBLIC_BACK_HOST || '';
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
-      
       const loginUrls = [
         `/api/auth/login`,
-        `${backendUrl}/api/auth/login`,
-        `${backendUrl}/auth/login`
+        `${process.env.NEXT_PUBLIC_BACK_HOST}/api/auth/login`,
+        `${process.env.NEXT_PUBLIC_BACK_HOST}/auth/login`
       ];
 
       let successfulLogin = false;
@@ -130,7 +120,6 @@ export default function AdminLogin() {
             headers: Object.fromEntries(response.headers.entries())
           });
 
-          // Capturar texto de respuesta para debugging
           const responseText = await response.text();
           console.log(`[AdminLogin] Texto de respuesta (${loginUrl}):`, responseText);
 
@@ -147,9 +136,15 @@ export default function AdminLogin() {
                 localStorage.setItem('authToken', data.token);
               }
 
+              // Navegación programática con depuración
+              console.log('[AdminLogin] Login exitoso, navegando a dashboard');
+              
+              // Intentar navegación múltiple
               router.push('/admin/dashboard');
+              window.location.href = '/admin/dashboard';
+
               successfulLogin = true;
-              break; // Salir del bucle si tiene éxito
+              break;
             } catch (parseError) {
               console.error(`[AdminLogin] Error parseando respuesta (${loginUrl}):`, parseError);
             }
